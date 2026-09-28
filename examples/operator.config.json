@@ -1,0 +1,41 @@
+{
+  "format": "bastion-operator/1",
+  "org": "org/harbourlight-freight",
+  "edge": "https://harbourlight.example",
+  "origin": "https://origin.harbourlight.example",
+  "accountable": {
+    "name": "Imogen Vasquez-Reyes (fictional)",
+    "contact": "machine-desk@harbourlight.example"
+  },
+  "auth": ["delegation/1"],
+  "payment": ["pay-policy/1"],
+  "capabilities": [
+    {
+      "verb": "quote",
+      "endpoint": "/v1/quotes",
+      "method": "POST",
+      "price": { "amount": 0, "currency": "GBP" },
+      "description": "Price a pallet shipment between two named ports. Free; a quote is not a booking."
+    },
+    {
+      "verb": "book",
+      "endpoint": "/v1/bookings",
+      "method": "POST",
+      "price": { "amount": 1500, "currency": "GBP" },
+      "description": "Book a quoted shipment. Priced in minor units: 1500 is GBP 15.00."
+    },
+    {
+      "verb": "track",
+      "endpoint": "/v1/shipments/track",
+      "method": "POST",
+      "price": { "amount": 25, "currency": "GBP" },
+      "description": "Report the last known position of a booked shipment."
+    }
+  ],
+  "policies": {
+    "payment": { "mode": "per-call" },
+    "delegation": { "maxDepth": 3 },
+    "receipts": { "perAction": true }
+  },
+  "x-note": "Harbourlight Freight is a fictional operator used for examples and tests. No real company, person or price is described here."
+}

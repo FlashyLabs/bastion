@@ -1,0 +1,15 @@
+{
+  "name": "@flashylabs/bastion",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Bastion — the commercial gateway for agent traffic. Exposes an existing website or API as a secure, authenticated, discoverable, payable machine interface. v0 skeleton, in design.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test 'test/*.test.mjs'",
+    "lint": "node tools/lint.mjs",
+    "start": "node src/server.mjs examples/operator.config.json"
+  }
+}
