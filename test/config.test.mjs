@@ -154,12 +154,60 @@ test('an empty capability list is refused: a gateway with nothing to call is inv
   assert.ok(validateConfig(config).errors.some((e) => e.startsWith('capabilities must be a non-empty array')));
 });
 
-test('an endpoint must be a path on the origin, not an absolute URL', () => {
+test('an endpoint is a path on the origin or an https URL on the origin\'s domain — nothing else', () => {
   const config = exampleConfig();
-  config.capabilities[0].endpoint = 'https://elsewhere.example/v1/quotes';
-  assert.ok(validateConfig(config).errors.some((e) => e.includes('capabilities[0].endpoint must be a path')));
   config.capabilities[0].endpoint = '//elsewhere.example/v1/quotes';
-  assert.equal(validateConfig(config).valid, false);
+  assert.ok(validateConfig(config).errors.some((e) => e.includes('capabilities[0].endpoint must be a path')));
+  for (const bad of ['v1/quotes', '', 42, 'http://origin.harbourlight.example/v1/quotes', 'https://user:pw@origin.harbourlight.example/v1/quotes']) {
+    const c = exampleConfig();
+    c.capabilities[0].endpoint = bad;
+    const result = validateConfig(c);
+    assert.equal(result.valid, false, JSON.stringify(bad));
+    assert.ok(result.errors.some((e) => e.includes('capabilities[0].endpoint must be a path')), JSON.stringify(bad));
+  }
+});
+
+test('an absolute endpoint on the origin host or a subdomain of it is valid, and resolves as written', () => {
+  const same = exampleConfig();
+  same.capabilities[0].endpoint = 'https://origin.harbourlight.example/v1/quotes';
+  assert.deepEqual(validateConfig(same), { valid: true, errors: [] });
+
+  const sub = exampleConfig();
+  sub.capabilities[0].endpoint = 'https://eu.origin.harbourlight.example/v1/quotes';
+  assert.deepEqual(validateConfig(sub), { valid: true, errors: [] });
+  assert.equal(originEndpoint(sub, sub.capabilities[0]), 'https://eu.origin.harbourlight.example/v1/quotes');
+
+  const cased = exampleConfig();
+  cased.capabilities[0].endpoint = 'https://EU.Origin.Harbourlight.example./v1/quotes';
+  assert.equal(validateConfig(cased).valid, true);
+});
+
+test('an endpoint on another domain, on the origin\'s parent, or on a sibling is refused as endpoint-cross-domain', () => {
+  for (const bad of [
+    'https://elsewhere.example/v1/quotes', // a stranger
+    'https://harbourlight.example/v1/quotes', // the parent — the edge host, which is not the origin
+    'https://api.harbourlight.example/v1/quotes', // a sibling of the origin
+    'https://origin.harbourlight.example.evil.example/v1/quotes', // a lookalike
+    'https://notorigin.harbourlight.example/v1/quotes', // a suffix match that is not a label match
+  ]) {
+    const config = exampleConfig();
+    config.capabilities[0].endpoint = bad;
+    const result = validateConfig(config);
+    assert.equal(result.valid, false, bad);
+    const error = result.errors.find((e) => e.includes('endpoint-cross-domain'));
+    assert.ok(error, `${bad}: ${result.errors}`);
+    assert.ok(error.startsWith('capabilities[0].endpoint is on'), error);
+  }
+});
+
+test('a cross-domain endpoint is not reported when the origin itself is already refused — one fault, one message', () => {
+  const config = exampleConfig();
+  config.origin = 'http://origin.harbourlight.example';
+  config.capabilities[0].endpoint = 'https://elsewhere.example/v1/quotes';
+  const result = validateConfig(config);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e.startsWith('origin must be an https URL')));
+  assert.ok(!result.errors.some((e) => e.includes('endpoint-cross-domain')));
 });
 
 test('policies are checked and receipts cannot be switched off', () => {

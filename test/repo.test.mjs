@@ -63,13 +63,22 @@ test('CLAUDE.md carries the estate house rules verbatim', () => {
 });
 
 test('the pure modules import no node: builtin; only the server does', () => {
-  const pure = ['src/config.mjs', 'src/agent-doc.mjs', 'src/handler.mjs'];
+  const pure = ['src/config.mjs', 'src/agent-doc.mjs', 'src/handler.mjs', 'src/vendor-domain.mjs'];
   for (const rel of pure) {
     assert.ok(!/from\s+['"]node:/.test(read(rel)), `${rel} must stay pure`);
   }
+  assert.ok(!/^\s*import\b/m.test(read('src/vendor-domain.mjs')), 'the vendored domain rule imports nothing at all');
   assert.ok(/from\s+['"]node:http['"]/.test(read('src/server.mjs')));
   const srcFiles = readdirSync(join(ROOT, 'src'));
-  assert.deepEqual(srcFiles.sort(), ['agent-doc.mjs', 'config.mjs', 'handler.mjs', 'server.mjs']);
+  assert.deepEqual(srcFiles.sort(), ['agent-doc.mjs', 'config.mjs', 'handler.mjs', 'server.mjs', 'vendor-domain.mjs']);
+});
+
+test('the well-known path is /.well-known/agent and nothing else — no .json alternate anywhere in src', () => {
+  for (const rel of ['src/config.mjs', 'src/agent-doc.mjs', 'src/handler.mjs', 'src/server.mjs']) {
+    const text = read(rel);
+    assert.ok(!text.includes('agent.json'), `${rel} must not name a .json spelling of the well-known path`);
+  }
+  assert.ok(read('src/agent-doc.mjs').includes("export const WELL_KNOWN_PATH = '/.well-known/agent';"));
 });
 
 test('the example operator is fictional and says so', () => {

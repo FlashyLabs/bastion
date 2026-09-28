@@ -6,7 +6,12 @@
 // The parser refuses; it does not guess. A config that fails validation is
 // not served in any degraded form.
 //
-// Pure: no I/O, no `node:` imports, no network.
+// Pure: no I/O, no `node:` imports, no network. The one import is the
+// same-domain rule, `./vendor-domain.mjs` — canonical in the agent-dns
+// repository, vendored here byte-identically (test/vendor-drift.test.mjs),
+// and itself import-free.
+
+import { isSameDomain } from './vendor-domain.mjs';
 
 export const CONFIG_FORMAT = 'bastion-operator/1';
 
@@ -106,7 +111,31 @@ function validatePrice(price, where, errors) {
   }
 }
 
-function validateCapability(capability, index, seen, errors) {
+// An endpoint is where Bastion forwards a capability call. Two shapes are
+// accepted: a path (`/v1/quotes`), resolved against `origin`; or an absolute
+// https URL whose host is the origin's host or a subdomain of it. Anything
+// else is `endpoint-cross-domain`: a gateway that forwards to a host the
+// operator does not control is a gateway to somebody else's API, and the
+// same-domain rule (`isSameDomain`, vendored from agent-dns) is the one rule
+// the whole neighbourhood uses to decide that — a subdomain, never a parent,
+// a sibling or a "registrable domain" guess.
+function validateEndpoint(endpoint, where, originHost, errors) {
+  if (typeof endpoint !== 'string' || endpoint.length === 0) {
+    errors.push(`${where}.endpoint must be a path on the origin starting with "/", or an https URL on the origin's domain`);
+    return;
+  }
+  if (endpoint.startsWith('/') && !endpoint.startsWith('//')) return; // a path: always on the origin
+  const url = httpsUrl(endpoint);
+  if (!url) {
+    errors.push(`${where}.endpoint must be a path on the origin starting with "/", or an https URL with no credentials on the origin's domain`);
+    return;
+  }
+  if (originHost && !isSameDomain(url.hostname, originHost)) {
+    errors.push(`${where}.endpoint is on ${url.hostname}, which is not ${originHost} or a subdomain of it (endpoint-cross-domain)`);
+  }
+}
+
+function validateCapability(capability, index, seen, originHost, errors) {
   const where = `capabilities[${index}]`;
   if (!isPlainObject(capability)) {
     errors.push(`${where} must be an object`);
@@ -127,9 +156,7 @@ function validateCapability(capability, index, seen, errors) {
     seen.add(verb);
   }
 
-  if (typeof endpoint !== 'string' || !endpoint.startsWith('/') || endpoint.startsWith('//')) {
-    errors.push(`${where}.endpoint must be a path on the origin, starting with "/"`);
-  }
+  validateEndpoint(endpoint, where, originHost, errors);
 
   if (method !== undefined && !HTTP_METHODS.includes(method)) {
     errors.push(`${where}.method must be one of ${HTTP_METHODS.join(', ')}`);
@@ -241,7 +268,8 @@ export function validateConfig(config) {
     errors.push('capabilities must be a non-empty array — a gateway with nothing to call is invisible');
   } else {
     const seen = new Set();
-    config.capabilities.forEach((capability, index) => validateCapability(capability, index, seen, errors));
+    const originHost = origin ? origin.hostname : null;
+    config.capabilities.forEach((capability, index) => validateCapability(capability, index, seen, originHost, errors));
   }
 
   validatePolicies(config.policies, errors);
@@ -274,7 +302,9 @@ export function findCapability(config, verb) {
 }
 
 /**
- * originEndpoint(config, capability) → absolute https URL on the origin.
+ * originEndpoint(config, capability) → absolute https URL on the origin's
+ * domain: a path resolves against `origin`; an absolute endpoint (already
+ * checked to be the origin host or a subdomain of it) is returned as is.
  * Private to the operator: this is what Bastion would proxy to, and it is
  * never placed in the derived discovery document.
  */

@@ -62,8 +62,20 @@ attaches a receipt stub. No install; Node 22; `node:` builtins only.
   price, a capability named for a department (`sales`, `marketing`,
   `engineering`, `operations`, `support`, `finance`, `legal`, `hr`), a
   missing accountable human, a contact carrying mailto header separators, an
-  unknown key without an `x-` prefix — each is refused with a sentence
-  naming the field, all at once.
+  unknown key without an `x-` prefix, a capability endpoint that is not on
+  the origin's domain — each is refused with a sentence naming the field,
+  all at once.
+- **An endpoint is on the origin's domain, under one rule the whole
+  neighbourhood shares.** A capability endpoint is a path on `origin`, or an
+  https URL whose host is the origin's host or a subdomain of it; anything
+  else — a stranger, the origin's parent, a sibling — is refused as
+  `endpoint-cross-domain`. The rule is `src/vendor-domain.mjs`, a
+  byte-identical copy of the same-domain rule canonical in the `agent-dns`
+  repository and shared with `agent/1`; it is deliberately not a
+  "registrable domain" guess, because without a Public Suffix List nothing
+  can tell `co.uk` from `example.com`. Re-vendor, never edit the copy;
+  `test/vendor-drift.test.mjs` compares it against canon when agent-dns is
+  checked out beside this repository.
 
 ## Implemented and designed
 
@@ -83,10 +95,11 @@ is pure and what touches the network.
 | Path | What it is |
 |---|---|
 | `src/config.mjs` | Operator config shape and `validateConfig(config) → {valid, errors}`. Pure |
+| `src/vendor-domain.mjs` | The same-domain rule (`isSameDomain`, `sameDomainUrl`, `normalizeDomain`). Vendored byte-identically from `agent-dns`; imports nothing. Re-vendor, never edit |
 | `src/agent-doc.mjs` | `deriveAgentDocument(config)` → the `agent/1` document. Pure |
 | `src/handler.mjs` | `handle(request, config, deps) → response`. The whole request path, pure; the proxy stage throws `NotImplemented` |
 | `src/server.mjs` | The `node:http` adapter. The only file that touches a socket, a clock, a key or the filesystem |
-| `test/` | `node --test`: config validation, document derivation, the pure handler, the loopback adapter, repo gates |
+| `test/` | `node --test`: config validation, document derivation, the pure handler, the loopback adapter, repo gates, and the drift check on the vendored domain rule (unknown, not passed, without a sibling `agent-dns` checkout) |
 | `tools/lint.mjs` | Zero-install lint: `node --check` on every module, import discipline, credential-shape scan |
 | `examples/operator.config.json` | A fictional operator, Harbourlight Freight. No real company, person or price |
 | `ARCHITECTURE.md` | The request path, the pure/network split, implemented vs designed |

@@ -27,9 +27,9 @@ config is the *input*, and the specs are *upstream* — read them, cite them,
 do not fork them.
 
 **The pure handler and the network edge are separate files, and the tests
-hold the line.** `src/config.mjs`, `src/agent-doc.mjs` and `src/handler.mjs`
-import no `node:` builtin and touch nothing outside their arguments: not a
-clock, not a key, not a socket. `handle(request, config, deps)` takes its
+hold the line.** `src/config.mjs`, `src/agent-doc.mjs`, `src/handler.mjs` and
+`src/vendor-domain.mjs` import no `node:` builtin and touch nothing outside
+their arguments: not a clock, not a key, not a socket. `handle(request, config, deps)` takes its
 `now` and `receiptSigner` from `deps`, so every flow is walked in a test
 with plain objects. `src/server.mjs` is the only file that opens a socket,
 reads a file, or hashes with `node:crypto`; it does nothing with a request
@@ -42,6 +42,22 @@ would have called. A 200 from a gateway that did not forward the call is a
 fabricated receipt. When the proxy is built, it is built behind that seam
 and the 501 test is replaced by one that drives a fake origin — never
 removed first.
+
+**The same-domain rule is vendored, not written here.** A capability
+endpoint is a path on `origin` or an https URL on the origin's host or a
+subdomain of it; a stranger, the origin's parent or a sibling is refused as
+`endpoint-cross-domain`. The rule is `src/vendor-domain.mjs`, a
+byte-identical copy of the file canonical in the `agent-dns` repository and
+vendored likewise into `agent-wellknown` and `flashy-examples`, so a gateway
+deriving an `agent/1` document and a consumer checking one answer "same
+domain" identically. It is host-or-subdomain by design and never a
+"registrable domain" guess: without a Public Suffix List nothing can tell
+`co.uk` from `example.com`, and the label-slice rules it replaced read
+`acme.co.uk` and `other.co.uk` as one publisher. `test/vendor-drift.test.mjs`
+compares the copy against canon when agent-dns is checked out beside this
+repository and reports unknown when it is not. Re-vendor; never edit it here.
+The well-known path is `/.well-known/agent` only, and a repo gate asserts no
+`.json` spelling appears in `src/`.
 
 **The receipt "signature" is a digest and says so.** `defaultDeps()` in the
 server signs with an unkeyed sha256 labelled `sha256-digest-unsigned`. It
@@ -66,8 +82,9 @@ npm start       # node src/server.mjs examples/operator.config.json  (PORT, HOST
   (`sales`, `marketing`, `engineering`, `operations`, `support`, `finance`,
   `legal`, `hr`), a duplicate verb, a missing accountable human, a contact
   carrying mailto header separators, an unknown auth or payment method, an
-  empty capability list, and any unknown key not prefixed `x-`. It reports
-  every error at once. `test/config.test.mjs`.
+  empty capability list, a capability endpoint off the origin's domain
+  (`endpoint-cross-domain`), and any unknown key not prefixed `x-`. It
+  reports every error at once. `test/config.test.mjs`.
 - **The discovery document is derived, never hand-written.**
   `deriveAgentDocument` is the only source of `/.well-known/agent`; it
   refuses an invalid config rather than emitting a partial document; two
@@ -97,8 +114,10 @@ npm start       # node src/server.mjs examples/operator.config.json  (PORT, HOST
 ## Don't
 
 - Hand-write anything that `agent-doc.mjs` derives. Edit the config.
-- Import a `node:` builtin in `src/config.mjs`, `src/agent-doc.mjs` or
-  `src/handler.mjs`.
+- Import a `node:` builtin in `src/config.mjs`, `src/agent-doc.mjs`,
+  `src/handler.mjs` or `src/vendor-domain.mjs`.
+- Edit `src/vendor-domain.mjs`. It is a copy; change it in `agent-dns` and
+  re-vendor.
 - Add a package. `node:` builtins only; the lint refuses any other specifier.
 - Put a real company, person, domain or price in an example or a test.
 - Commit a `LICENSE` file or declare a licence anywhere in this tree.

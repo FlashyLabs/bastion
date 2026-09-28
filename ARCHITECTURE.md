@@ -33,9 +33,11 @@ One file: the operator config (`src/config.mjs`, format
 `bastion-operator/1`). It holds the public `edge` host, the private `origin`
 host, the org identifier, one accountable human with a contact address, the
 accepted auth methods (`delegation/1`) and payment methods (`pay-policy/1`),
-the capabilities — a verb, an origin path, a method, a price in integer
-minor units with a currency — and policies. It is validated, and a config
-that fails validation is not served in any form.
+the capabilities — a verb, an origin endpoint (a path on `origin`, or an
+https URL on the origin's host or a subdomain of it — never another domain,
+under the same-domain rule vendored in `src/vendor-domain.mjs`), a method, a
+price in integer minor units with a currency — and policies. It is validated,
+and a config that fails validation is not served in any form.
 
 Everything an agent is shown is derived from this file. Nothing an agent is
 shown is written by hand.

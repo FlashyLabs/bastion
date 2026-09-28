@@ -6,7 +6,7 @@
 // Rules:
 //   1. every .mjs parses (`node --check`)
 //   2. every import is a `node:` builtin or a relative path — no npm packages
-//   3. the pure modules (config, agent-doc, handler) import no `node:` at all
+//   3. the pure modules (config, agent-doc, handler, vendor-domain) import no `node:` at all
 //   4. no console.* in src/ — the server writes to process.stdout/stderr on purpose
 //   5. no credential-shaped string anywhere in the tree
 
@@ -17,7 +17,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PURE_MODULES = ['src/config.mjs', 'src/agent-doc.mjs', 'src/handler.mjs'];
+const PURE_MODULES = ['src/config.mjs', 'src/agent-doc.mjs', 'src/handler.mjs', 'src/vendor-domain.mjs'];
 const SKIP_DIRS = new Set(['.git', 'node_modules']);
 
 const CREDENTIAL_SHAPES = [
