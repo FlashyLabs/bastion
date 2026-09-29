@@ -1,0 +1,96 @@
+{
+  "x-generated": "estate-charter/1; 2026-09-29; every role is one standing job, and five roles are five agents",
+  "aao": "0.1",
+  "name": "Bastion",
+  "slug": "bastion",
+  "description": "Bastion — a product on the FlashyOS mesh — a running service with a roadmap, a deploy and the invariants it rests on enforced by tests. AAO expands to Agentic Autonomous Organization.",
+  "accountableTo": "michael@gda.capital",
+  "escalation": "product",
+  "repositories": [
+    {
+      "name": "bastion",
+      "url": "github.com/FlashyLabs/bastion",
+      "default": true,
+      "holds": [
+        "product",
+        "service",
+        "deploy"
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "name": "product",
+      "family": "product",
+      "purpose": "Owns what the product does and the order it is built in, and answers to the accountable human for the roadmap it commits to.",
+      "measure": "Roadmap items shipped, as a share of those planned",
+      "capabilities": [
+        "define-roadmap",
+        "prioritise-work"
+      ],
+      "humanApprovalAtOrAbove": "HIGH",
+      "x-capability": [
+        "content-exchange"
+      ],
+      "worksIn": [
+        "bastion"
+      ]
+    },
+    {
+      "name": "engineering",
+      "family": "engineering",
+      "purpose": "Builds and maintains the codebase, and keeps the invariants the product rests on enforced by a test rather than a guideline.",
+      "measure": "Changes carrying a test, as a share of merges",
+      "capabilities": [
+        "merge-changes",
+        "define-architecture"
+      ],
+      "humanApprovalAtOrAbove": "HIGH",
+      "worksIn": [
+        "bastion"
+      ]
+    },
+    {
+      "name": "operations",
+      "family": "operations",
+      "purpose": "Runs the deploy and keeps the service up. A change to production waits for a named human at or above the critical floor — no agent ships to prod on its own say-so.",
+      "measure": "Deploys that stay green, as a share of deploys",
+      "capabilities": [
+        "deploy-release",
+        "roll-back"
+      ],
+      "humanApprovalAtOrAbove": "CRITICAL",
+      "worksIn": [
+        "bastion"
+      ]
+    },
+    {
+      "name": "review",
+      "family": "governance",
+      "purpose": "Reviews and approves a change before it lands. Agents suggest; humans consent; nothing reaches the default branch without an approving review.",
+      "measure": "Merges carrying an approving review, as a share of merges",
+      "capabilities": [
+        "review-changes",
+        "approve-merge"
+      ],
+      "humanApprovalAtOrAbove": "HIGH",
+      "worksIn": [
+        "bastion"
+      ]
+    },
+    {
+      "name": "conformance",
+      "family": "risk",
+      "purpose": "Runs the tests, the lint and the mesh conformance check, and holds the default branch to what those checks require.",
+      "measure": "Checks passing on the default branch, as a share of runs",
+      "capabilities": [
+        "run-tests",
+        "run-checks"
+      ],
+      "humanApprovalAtOrAbove": "LOW",
+      "worksIn": [
+        "bastion"
+      ]
+    }
+  ]
+}

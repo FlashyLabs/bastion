@@ -1,0 +1,50 @@
+{
+  "property": "bastion",
+  "domain": null,
+  "title": "Bastion — the gateway for agent traffic",
+  "pitch": "Bastion is a commercial gateway that puts a secure, authenticated, discoverable, payable machine interface in front of an existing website or API, for operators who want agents to be able to use their business without rewriting it.",
+  "layer": "gateway",
+  "contract": "agent/1",
+  "accent": "--flashy-ember",
+  "refusals": [
+    {
+      "title": "The discovery document is derived, never hand-written",
+      "body": "An operator edits one validated config. `/.well-known/agent` is computed from it — two documents describing what an org does are two documents that will disagree, and the one a stranger reads is not the one anybody edits. The origin endpoints never appear in the derived document; a test proves it."
+    },
+    {
+      "title": "Authentication is a delegation chain, not an API key",
+      "body": "The caller presents delegation/1 authority and Bastion verifies it back to a root the operator trusts. Designed, not built in v0; the response says `verified: false` until the stage lands."
+    },
+    {
+      "title": "Payment is a policy, not a paywall",
+      "body": "Every capability carries a price in integer minor units with a currency; pay-policy/1 decides whether the caller may be charged before the call is made. Designed, not built in v0; the response says `evaluated: false` until the stage lands."
+    },
+    {
+      "title": "Every action leaves a receipt",
+      "body": "A receipt per capability call, signed by the edge, is not optional — the config validator refuses a policy that turns it off. In v0 the receipt is a stub whose outcome says the call was not made and whose signature is an unkeyed digest labelled as such."
+    },
+    {
+      "title": "The parser refuses; it does not guess",
+      "body": "A non-https origin, a float price, a capability named for a department, a missing accountable human, a contact carrying mailto header separators, an unknown key without an `x-` prefix, a capability endpoint that is not on the origin's domain — each is refused with a sentence naming the field, all at once."
+    }
+  ],
+  "faq": [
+    {
+      "q": "What does the Bastion gateway enforce?",
+      "a": "A derived agent/1 discovery document that never leaks the origin, delegation/1 authentication of the caller, a pay-policy/1 decision before any charge, capability endpoints that stay on the origin's own domain, and a signed receipt per action. In this v0 skeleton stage 1 is built and tested; stages 2–4 are designed only and every response that reaches them says so."
+    },
+    {
+      "q": "Where does Bastion sit in Web 4?",
+      "a": "It is in the Gateway layer — the \"How do I connect to the old web?\" question. It is a commercial product, not a protocol: it implements the open agent/1, delegation/1 and pay-policy/1 specifications and refuses to redefine any of them. Cloudflare sits in front of a site for human traffic; Bastion is that position for agent traffic."
+    },
+    {
+      "q": "Is this repository public?",
+      "a": "Yes — it was measured public on 2026-09-28 while it is private-intended, and both facts are recorded in stack.json's x-note. It is a commercial product meant to stay private once it ships; the visibility on the map is what GitHub reports, not what was intended, and it stays public there until it is actually flipped."
+    }
+  ],
+  "links": {
+    "hub": "https://github.com/FlashyLabs/web4",
+    "spec": "https://github.com/FlashyLabs/bastion",
+    "repo": "https://github.com/FlashyLabs/bastion"
+  }
+}
