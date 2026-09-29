@@ -1,0 +1,80 @@
+{
+  "contract": "directory/1",
+  "generated": "2026-09-29",
+  "org": "org/bastion",
+  "nodes": [
+    {
+      "id": "org/bastion",
+      "kind": "org",
+      "name": "Bastion"
+    },
+    {
+      "id": "person/michael",
+      "kind": "person",
+      "name": "Michael Gord"
+    },
+    {
+      "id": "agent/bastion-product",
+      "kind": "agent",
+      "name": "product",
+      "for": "org/bastion"
+    },
+    {
+      "id": "agent/bastion-engineering",
+      "kind": "agent",
+      "name": "engineering",
+      "for": "org/bastion"
+    },
+    {
+      "id": "agent/bastion-operations",
+      "kind": "agent",
+      "name": "operations",
+      "for": "org/bastion"
+    },
+    {
+      "id": "agent/bastion-review",
+      "kind": "agent",
+      "name": "review",
+      "for": "org/bastion"
+    },
+    {
+      "id": "agent/bastion-conformance",
+      "kind": "agent",
+      "name": "conformance",
+      "for": "org/bastion"
+    }
+  ],
+  "edges": [
+    {
+      "from": "org/bastion",
+      "rel": "staffs",
+      "to": "agent/bastion-product",
+      "by": "person/michael"
+    },
+    {
+      "from": "org/bastion",
+      "rel": "staffs",
+      "to": "agent/bastion-engineering",
+      "by": "person/michael"
+    },
+    {
+      "from": "org/bastion",
+      "rel": "staffs",
+      "to": "agent/bastion-operations",
+      "by": "person/michael"
+    },
+    {
+      "from": "org/bastion",
+      "rel": "staffs",
+      "to": "agent/bastion-review",
+      "by": "person/michael"
+    },
+    {
+      "from": "org/bastion",
+      "rel": "staffs",
+      "to": "agent/bastion-conformance",
+      "by": "person/michael"
+    }
+  ],
+  "x-note": "Five agents, one per charter role. Generated from flashyos.roles.json; a live org is provisioned from the charter with provision-org-from-charter."
+}
