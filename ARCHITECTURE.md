@@ -42,6 +42,55 @@ and a config that fails validation is not served in any form.
 Everything an agent is shown is derived from this file. Nothing an agent is
 shown is written by hand.
 
+### What the config validator refuses (all built, all tested)
+
+`validateConfig(config) → {valid, errors}` reports every fault at once and
+never throws; `assertConfig` throws one error carrying the same list. The
+refusals below are the built behaviour of stage 1, each pinned in
+`test/config.test.mjs`:
+
+- a non-object config; an unknown top-level key not prefixed `x-`;
+- a `format` other than `bastion-operator/1`;
+- an `org` that is not `org/<slug>`;
+- an `edge` or `origin` that is not an https URL, or that carries credentials;
+- a missing accountable human; an empty `accountable.name`; an unknown
+  `accountable` key; a `contact` carrying mailto header separators
+  (`?`, `&`, `#`, whitespace, `,`, `;`, `<`, `>`) or more than one `@`;
+- an `auth` or `payment` that is not a non-empty array, or names a method
+  outside `delegation/1` / `pay-policy/1`;
+- an empty `capabilities` list (a gateway with nothing to call is invisible);
+- per capability: a non-object; an unknown key; a `verb` that is not a
+  lowercase slug, that names a department (`sales`, `marketing`,
+  `engineering`, `operations`, `support`, `finance`, `legal`, `hr`), or that
+  repeats; an `endpoint` off the origin's domain (`endpoint-cross-domain`); an
+  unknown http `method`; a missing `price`, a `price` that is not an object,
+  a non-integer / non-finite / unsafe-integer / negative `price.amount`, a
+  `price.currency` that is not three uppercase letters, an unknown `price`
+  key, or a present-but-empty `description`;
+- a `policies` that is not an object, an unknown policy key, a
+  `policies.payment.mode` other than `per-call`/`free`, a
+  `policies.delegation.maxDepth` below 1, or `policies.receipts.perAction`
+  anything but `true` — a receipt per action is not optional.
+
+Any key prefixed `x-` is accepted at every level. `policies` as a whole is
+optional; everything else above is required.
+
+### What derivation guarantees
+
+`deriveAgentDocument(config)` (stage 1, `test/agent-doc.test.mjs`):
+
+- refuses an invalid config rather than emitting a partial document;
+- is deterministic — two derivations of one config are byte-identical, key
+  order fixed by construction;
+- publishes each capability at `https://<edge>/capability/<verb>`, defaulting
+  a missing `method` to `POST` and preserving an explicit one;
+- carries `price.amount` as the integer minor unit it was given, including
+  `0` for a free capability (never omitted);
+- copies `auth` and `payment` (mutating the document cannot reach the config);
+- emits `accountable` as exactly `{name, contact}` — no extra key leaks — and
+  the origin host and every origin path are absent by construction;
+- passes `x-` extensions through from the config and each capability.
+
 ## The five stages
 
 ### 1. Resolve and serve `/.well-known/agent` — implemented

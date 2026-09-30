@@ -2,7 +2,7 @@
 // web4's readme.test.mjs for this property, a product rather than a spec. A reader
 // arriving cold gets the mark beside the title, the "Where it sits in the stack"
 // section the front door adds, the private-intended visibility, a dated status, and
-// the proprietary licence line last. node: builtins only, no install.
+// the Apache-2.0 licence line last. node: builtins only, no install.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
 
-const LICENCE_LINE = 'Licence: proprietary; to be declared. The estate licence register in flashyos governs.';
+const LICENCE_LINE = 'Licensed under Apache-2.0 (holder Flashy Labs); the estate register in flashyos `tools/estate-licences.mjs` is the authority.';
 
 test('the H1 is the first line', () => {
   assert.ok(readme.startsWith('# Bastion'), 'the H1 must be the first line');
@@ -36,7 +36,7 @@ test('the README carries the private-intended visibility and a dated status', ()
   assert.match(readme, /^Status:.*\b\d{4}-\d{2}-\d{2}\b/m, 'the status line must carry a measured date');
 });
 
-test('the proprietary licence line is the last line, exactly once', () => {
+test('the Apache-2.0 licence line is the last line, exactly once', () => {
   assert.equal(readme.split(LICENCE_LINE).length - 1, 1, 'the licence line must appear exactly once');
-  assert.equal(readme.trimEnd().split('\n').at(-1), LICENCE_LINE, 'the proprietary licence line must be the last line');
+  assert.equal(readme.trimEnd().split('\n').at(-1), LICENCE_LINE, 'the Apache-2.0 licence line must be the last line');
 });

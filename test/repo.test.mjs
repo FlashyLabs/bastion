@@ -23,16 +23,21 @@ test('package.json: private, ESM, Node 22, no dependencies of any kind', () => {
   assert.ok(!existsSync(join(ROOT, 'node_modules')), 'nothing to install, nothing installed');
 });
 
-test('no LICENSE file: the licence is declared once, in flashyos', () => {
-  for (const name of readdirSync(ROOT)) {
-    assert.ok(!/^licen[cs]e/i.test(name), `${name} must not exist here`);
-  }
+test('LICENSE is present and is Apache-2.0 held by Flashy Labs, as the flashyos register declares', () => {
+  // The estate licence register (flashyos tools/estate-licences.mjs) is the
+  // authority; it names this repository Apache-2.0, holder Flashy Labs. The
+  // licence is not decided here — it is made to match what the register decided.
+  assert.ok(existsSync(join(ROOT, 'LICENSE')), 'LICENSE must exist — the register names this repo Apache-2.0');
+  const licence = read('LICENSE');
+  assert.ok(licence.includes('Apache License'), 'LICENSE must be the Apache-2.0 text');
+  assert.ok(licence.includes('Version 2.0'), 'LICENSE must be Apache version 2.0');
+  assert.ok(licence.includes('Copyright 2026 Flashy Labs'), 'LICENSE must name the holder the register declares');
 });
 
 test('README ends on the exact licence line and carries the status and visibility lines', () => {
   const readme = read('README.md');
   const lines = readme.trimEnd().split('\n');
-  assert.equal(lines.at(-1), 'Licence: proprietary; to be declared. The estate licence register in flashyos governs.');
+  assert.equal(lines.at(-1), 'Licensed under Apache-2.0 (holder Flashy Labs); the estate register in flashyos `tools/estate-licences.mjs` is the authority.');
   assert.ok(readme.includes('Status: v0 skeleton, in design'));
   assert.ok(readme.includes('Visibility: private-intended'));
 });

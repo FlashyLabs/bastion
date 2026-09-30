@@ -248,3 +248,129 @@ test('origin and edge endpoints resolve to different hosts for one capability', 
   assert.equal(edgeEndpoint(config, capability), 'https://harbourlight.example/capability/book');
   assert.equal(findCapability(config, 'sales'), undefined);
 });
+
+// ── Extended coverage of the built config validator ─────────────────────────
+// The suite above covers the headline refusals; these hold the remaining
+// validated-but-previously-untested paths, so a rule cannot rot silently.
+
+test('the wrong format string is refused', () => {
+  const config = exampleConfig();
+  config.format = 'operator/1';
+  const result = validateConfig(config);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((e) => e === 'format must be "bastion-operator/1"'));
+});
+
+test('an org that is not org/<slug> is refused', () => {
+  for (const bad of ['harbourlight', 'org/', 'org/Harbour', 'person/x', 'org/-x', undefined, 42]) {
+    const config = exampleConfig();
+    config.org = bad;
+    const result = validateConfig(config);
+    assert.equal(result.valid, false, JSON.stringify(bad));
+    assert.ok(result.errors.some((e) => e.startsWith('org must be an identifier')), JSON.stringify(bad));
+  }
+});
+
+test('a price that is not an object is refused', () => {
+  for (const bad of [1500, '1500', null, [1500, 'GBP']]) {
+    const config = exampleConfig();
+    config.capabilities[0].price = bad;
+    const result = validateConfig(config);
+    assert.equal(result.valid, false, JSON.stringify(bad));
+    assert.ok(result.errors.some((e) => e.includes('capabilities[0].price must be an object')), JSON.stringify(bad));
+  }
+});
+
+test('an unknown key inside price is refused unless x- prefixed', () => {
+  const config = exampleConfig();
+  config.capabilities[0].price.tax = 20;
+  assert.ok(validateConfig(config).errors.some((e) => e.includes('capabilities[0].price.tax is not a known key')));
+
+  const extended = exampleConfig();
+  extended.capabilities[0].price['x-tier'] = 'flat';
+  assert.equal(validateConfig(extended).valid, true);
+});
+
+test('a non-finite or unsafe-integer price amount is refused as not an integer in minor units', () => {
+  for (const bad of [Number.NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    const config = exampleConfig();
+    config.capabilities[0].price.amount = bad;
+    const result = validateConfig(config);
+    assert.equal(result.valid, false, String(bad));
+    assert.ok(result.errors.some((e) => e.includes('capabilities[0].price.amount must be an integer in minor units')), String(bad));
+  }
+});
+
+test('an unknown http method on a capability is refused; a known non-default method is accepted', () => {
+  const bad = exampleConfig();
+  bad.capabilities[0].method = 'FETCH';
+  assert.ok(validateConfig(bad).errors.some((e) => e.includes('capabilities[0].method must be one of')));
+
+  const good = exampleConfig();
+  good.capabilities[0].method = 'GET';
+  assert.equal(validateConfig(good).valid, true);
+});
+
+test('a present-but-empty capability description is refused', () => {
+  for (const bad of ['', '   ', 42]) {
+    const config = exampleConfig();
+    config.capabilities[0].description = bad;
+    const result = validateConfig(config);
+    assert.equal(result.valid, false, JSON.stringify(bad));
+    assert.ok(result.errors.some((e) => e.includes('capabilities[0].description must be a non-empty string')), JSON.stringify(bad));
+  }
+});
+
+test('a capability that is not an object is refused', () => {
+  const config = exampleConfig();
+  config.capabilities[0] = 'quote';
+  assert.ok(validateConfig(config).errors.some((e) => e === 'capabilities[0] must be an object'));
+});
+
+test('an accountable with an empty name, or an unknown key, is refused', () => {
+  const emptyName = exampleConfig();
+  emptyName.accountable.name = '   ';
+  assert.ok(validateConfig(emptyName).errors.some((e) => e === 'accountable.name must be a non-empty string'));
+
+  const unknown = exampleConfig();
+  unknown.accountable.role = 'ceo';
+  assert.ok(validateConfig(unknown).errors.some((e) => e.includes('accountable.role is not a known key')));
+
+  const extended = exampleConfig();
+  extended.accountable['x-team'] = 'ops';
+  assert.equal(validateConfig(extended).valid, true);
+});
+
+test('auth and payment must each be a non-empty array', () => {
+  for (const field of ['auth', 'payment']) {
+    for (const bad of [undefined, 'delegation/1', []]) {
+      const config = exampleConfig();
+      config[field] = bad;
+      const result = validateConfig(config);
+      assert.equal(result.valid, false, `${field}=${JSON.stringify(bad)}`);
+      assert.ok(result.errors.some((e) => e === `${field} must be a non-empty array`), `${field}=${JSON.stringify(bad)}`);
+    }
+  }
+});
+
+test('policies must be an object and reject an unknown policy key', () => {
+  const notObject = exampleConfig();
+  notObject.policies = 'per-call';
+  assert.ok(validateConfig(notObject).errors.some((e) => e === 'policies must be an object'));
+
+  const unknown = exampleConfig();
+  unknown.policies.rateLimit = { rpm: 60 };
+  assert.ok(validateConfig(unknown).errors.some((e) => e.includes('policies.rateLimit is not a known key')));
+
+  const absent = exampleConfig();
+  delete absent.policies;
+  assert.equal(validateConfig(absent).valid, true, 'policies is optional');
+});
+
+test('a path endpoint resolves against the origin, not the edge', () => {
+  const config = exampleConfig();
+  const quote = findCapability(config, 'quote');
+  assert.equal(originEndpoint(config, quote), 'https://origin.harbourlight.example/v1/quotes');
+  // The path is on the origin regardless of the edge host it is served behind.
+  assert.notEqual(new URL(originEndpoint(config, quote)).host, new URL(config.edge).host);
+});

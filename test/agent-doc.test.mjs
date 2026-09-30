@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { deriveAgentDocument, renderAgentDocument, AGENT_DOC_FORMAT } from '../src/agent-doc.mjs';
+import { deriveAgentDocument, renderAgentDocument, AGENT_DOC_FORMAT, WELL_KNOWN_PATH } from '../src/agent-doc.mjs';
 import { exampleConfig } from './fixtures.mjs';
 
 const VERB = /^[a-z][a-z0-9-]{1,63}$/;
@@ -82,4 +82,52 @@ test('a capability with no method is published as POST', () => {
   const config = exampleConfig();
   delete config.capabilities[0].method;
   assert.equal(deriveAgentDocument(config).capabilities[0].method, 'POST');
+});
+
+// ── Extended coverage of the built derivation stage ─────────────────────────
+
+test('the well-known path is exactly /.well-known/agent', () => {
+  assert.equal(WELL_KNOWN_PATH, '/.well-known/agent');
+});
+
+test('a free capability travels as amount 0, not omitted', () => {
+  const config = exampleConfig();
+  const doc = deriveAgentDocument(config);
+  const quote = doc.capabilities.find((c) => c.verb === 'quote');
+  assert.equal(quote.price.amount, 0);
+  assert.equal(quote.price.currency, 'GBP');
+});
+
+test('an explicitly declared method is preserved, not forced to POST', () => {
+  const config = exampleConfig();
+  config.capabilities[0].method = 'GET';
+  assert.equal(deriveAgentDocument(config).capabilities[0].method, 'GET');
+});
+
+test('capability order in the document follows the config', () => {
+  const doc = deriveAgentDocument(exampleConfig());
+  assert.deepEqual(doc.capabilities.map((c) => c.verb), ['quote', 'book', 'track']);
+});
+
+test('auth and payment in the document are copies, not references to the config arrays', () => {
+  const config = exampleConfig();
+  const doc = deriveAgentDocument(config);
+  assert.notEqual(doc.auth, config.auth);
+  assert.notEqual(doc.payment, config.payment);
+  doc.auth.push('injected');
+  assert.deepEqual(config.auth, ['delegation/1'], 'mutating the document must not reach back into the config');
+});
+
+test('accountable in the document carries only name and contact — no extra key leaks through', () => {
+  const config = exampleConfig();
+  config.accountable['x-team'] = 'ops';
+  const doc = deriveAgentDocument(config);
+  assert.deepEqual(Object.keys(doc.accountable).sort(), ['contact', 'name']);
+});
+
+test('the rendered document is pretty-printed JSON ending in a newline', () => {
+  const text = renderAgentDocument(exampleConfig());
+  assert.ok(text.endsWith('\n'));
+  assert.deepEqual(JSON.parse(text), deriveAgentDocument(exampleConfig()));
+  assert.ok(text.includes('\n  "agent": "agent/1"'), 'two-space indentation');
 });
