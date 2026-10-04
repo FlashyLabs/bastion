@@ -10,12 +10,17 @@ permissions:
 jobs:
   check:
     name: lint + test (no install)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['22', '24']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node }}
       # Nothing to install: node: builtins only. An install step here would be
       # a step that can quietly succeed at nothing.
       - run: npm run lint
