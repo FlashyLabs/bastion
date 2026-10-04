@@ -105,7 +105,7 @@ test('CI runs lint and test with no install step', () => {
   const ci = read('.github/workflows/ci.yml');
   assert.ok(ci.includes('actions/checkout@v4'));
   assert.ok(ci.includes('actions/setup-node@v4'));
-  assert.ok(ci.includes("node-version: '22'") || ci.includes('node-version: 22'));
+  assert.ok(/node:\s*\[[^\]]*'22'/.test(ci), 'CI matrix includes Node 22');
   assert.ok(ci.includes('npm run lint'));
   assert.ok(ci.includes('npm test'));
   assert.ok(!/npm (ci|install)\b/.test(ci), 'nothing to install');
